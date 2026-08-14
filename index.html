@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diário de Foco — Contador de Dieta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171a;
+    --surface: #1c2024;
+    --surface-2: #22262b;
+    --line: #2c3238;
+    --amber: #e3a857;
+    --amber-dim: #b5854080;
+    --green: #7fa66b;
+    --red: #c17767;
+    --text: #edeae3;
+    --muted: #8a8f94;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(227,168,87,0.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:32px 16px 60px;
+  }
+  .wrap{max-width:560px; margin:0 auto;}
+
+  /* header */
+  header{margin-bottom:28px;}
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:2.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background:var(--amber);
+    border-radius:1px;
+    transform:rotate(45deg);
+    display:inline-block;
+  }
+  h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:0.5px;
+    margin:6px 0 0;
+    color:var(--text);
+  }
+
+  /* tabs */
+  .tabs{
+    display:flex;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:4px;
+    margin:24px 0;
+    gap:4px;
+  }
+  .tab-btn{
+    flex:1;
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:12px 8px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:background .2s, color .2s;
+  }
+  .tab-btn.active{
+    background:var(--surface-2);
+    color:var(--amber);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  .view{display:none;}
+  .view.active{display:block; animation: fade .35s ease;}
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ===== COUNTER CARD ===== */
+  .hero-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:36px 24px 28px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-card::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(227,168,87,0.05), transparent 40%);
+    pointer-events:none;
+  }
+  .day-label{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .day-number{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:104px;
+    line-height:1;
+    color:var(--amber);
+    margin:8px 0 4px;
+    letter-spacing:-2px;
+  }
+  .day-suffix{
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    color:var(--muted);
+    letter-spacing:1px;
+  }
+  .motivation{
+    margin-top:18px;
+    font-size:14.5px;
+    color:var(--text);
+    line-height:1.5;
+    padding:0 8px;
+  }
+  .start-date-note{
+    margin-top:14px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.5px;
+  }
+
+  /* tally grid — one dot per day, grouped in weeks of 7 */
+  .tally-wrap{
+    margin-top:26px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:20px;
+  }
+  .tally-title{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .tally-grid{
+    display:grid;
+    grid-template-columns:repeat(14, 1fr);
+    gap:6px;
+  }
+  .tally-dot{
+    width:100%;
+    aspect-ratio:1;
+    border-radius:3px;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+  }
+  .tally-dot.filled{
+    background:var(--amber);
+    border-color:var(--amber);
+  }
+
+  /* setup box */
+  .setup-box{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 22px;
+    text-align:center;
+  }
+  .setup-box p{color:var(--muted); font-size:14px; line-height:1.6; margin:0 0 18px;}
+  .setup-box input[type="date"]{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Space Mono', monospace;
+    padding:10px 12px;
+    border-radius:8px;
+    margin-bottom:14px;
+    width:100%;
+    max-width:220px;
+  }
+
+  button.primary{
+    background:var(--amber);
+    color:#20180a;
+    border:none;
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size:12.5px;
+    padding:12px 20px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:transform .15s, filter .15s;
+  }
+  button.primary:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  button.primary:active{transform:translateY(0);}
+
+  .reset-link{
+    display:block;
+    text-align:center;
+    margin-top:16px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    text-decoration:underline;
+    cursor:pointer;
+    background:none;
+    border:none;
+  }
+
+  /* ===== WEIGHT VIEW ===== */
+  .weight-form{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px;
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+  }
+  .field{flex:1;}
+  .field label{
+    display:block;
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:1px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Space Mono', monospace;
+    font-size:16px;
+    padding:10px 12px;
+    border-radius:8px;
+  }
+  .field input:focus, .setup-box input:focus{outline:2px solid var(--amber); outline-offset:1px;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-top:16px;
+  }
+  .stat-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+  }
+  .stat-label{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:1px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .stat-value{
+    font-family:'Oswald', sans-serif;
+    font-size:28px;
+    font-weight:600;
+    margin-top:6px;
+  }
+  .stat-value.pos{color:var(--red);}
+  .stat-value.neg{color:var(--green);}
+  .stat-value.neutral{color:var(--text);}
+
+  .history{
+    margin-top:20px;
+  }
+  .history-title{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin:0 0 12px;
+  }
+  .entry{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .entry-left{display:flex; flex-direction:column; gap:3px;}
+  .entry-date{font-family:'Space Mono', monospace; font-size:11px; color:var(--muted);}
+  .entry-weight{font-family:'Oswald', sans-serif; font-size:19px; font-weight:600;}
+  .entry-right{display:flex; align-items:center; gap:10px;}
+  .entry-delta{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:6px;
+    background:var(--surface-2);
+  }
+  .entry-delta.pos{color:var(--red);}
+  .entry-delta.neg{color:var(--green);}
+  .entry-delta.neutral{color:var(--muted);}
+  .del-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    padding:4px;
+  }
+  .del-btn:hover{color:var(--red);}
+
+  .empty-state{
+    text-align:center;
+    color:var(--muted);
+    font-size:13.5px;
+    padding:30px 10px;
+    border:1px dashed var(--line);
+    border-radius:14px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);
+    border:1px solid var(--amber);
+    color:var(--text);
+    font-family:'Space Mono', monospace;
+    font-size:12.5px;
+    padding:11px 18px;
+    border-radius:10px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s, transform .25s;
+    z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:400px){
+    .day-number{font-size:80px;}
+    .tally-grid{grid-template-columns:repeat(10,1fr);}
+  }
+
+  /* ===== TIMER ===== */
+  .timer-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:34px 22px 28px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+    transition:box-shadow .3s, border-color .3s;
+  }
+  .timer-card.ringing{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(227,168,87,0.15);
+  }
+  .timer-display{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:64px;
+    letter-spacing:2px;
+    color:var(--text);
+    margin:6px 0 4px;
+  }
+  .timer-display.ringing{color:var(--amber); animation:pulse 1s infinite;}
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.45;} }
+  .timer-status{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .timer-controls{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:22px;
+    flex-wrap:wrap;
+  }
+  button.secondary{
+    background:var(--surface-2);
+    color:var(--text);
+    border:1px solid var(--line);
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size:12px;
+    padding:11px 18px;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  button.secondary:hover{border-color:var(--amber); color:var(--amber);}
+  button.danger{
+    background:var(--red);
+    color:#1a1210;
+  }
+  .timer-setup{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:20px;
+    margin-top:16px;
+  }
+  .quick-mins{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  .quick-mins button{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .quick-mins button:hover{color:var(--amber); border-color:var(--amber);}
+  .file-row{
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .file-row label.filelabel{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:1px;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  .file-name{
+    font-size:12px;
+    color:var(--muted);
+    max-width:160px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Diário de foco</div>
+    <h1>Contador de dieta</h1>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dias">Dias</button>
+    <button class="tab-btn" data-tab="peso">Peso</button>
+    <button class="tab-btn" data-tab="calorias">Calorias</button>
+    <button class="tab-btn" data-tab="timer">Timer</button>
+  </div>
+
+  <!-- ===== VIEW: DIAS ===== -->
+  <section id="view-dias" class="view active">
+    <div id="setup-box" class="setup-box" style="display:none;">
+      <p>Ainda não há uma data de início registrada.<br>Escolha quando sua dieta começou para começar a contagem.</p>
+      <input type="date" id="start-date-input">
+      <div><button class="primary" id="start-btn">Iniciar contagem</button></div>
+    </div>
+
+    <div id="counter-box" style="display:none;">
+      <div class="hero-card">
+        <div class="day-label">Você está há</div>
+        <div class="day-number" id="day-number">0</div>
+        <div class="day-suffix" id="day-suffix">dias na dieta</div>
+        <div class="motivation" id="motivation-text"></div>
+        <div class="start-date-note" id="start-date-note"></div>
+      </div>
+
+      <div class="tally-wrap">
+        <div class="tally-title">Cada quadrado é um dia</div>
+        <div class="tally-grid" id="tally-grid"></div>
+      </div>
+
+      <button class="reset-link" id="reset-btn">redefinir data de início</button>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: PESO ===== -->
+  <section id="view-peso" class="view">
+    <div class="weight-form">
+      <div class="field">
+        <label for="weight-input">Peso atual (kg)</label>
+        <input type="number" id="weight-input" inputmode="decimal" step="0.1" placeholder="ex: 82.4">
+      </div>
+      <button class="primary" id="save-weight-btn">Salvar</button>
+    </div>
+
+    <div class="stats-row" id="stats-row" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-label">Desde o início</div>
+        <div class="stat-value" id="stat-total-pct">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Desde o último registro</div>
+        <div class="stat-value" id="stat-last-pct">—</div>
+      </div>
+    </div>
+
+    <div class="history">
+      <div class="history-title">Histórico</div>
+      <div id="history-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: CALORIAS ===== -->
+  <section id="view-calorias" class="view">
+    <div class="weight-form" style="flex-wrap:wrap;">
+      <div class="field" style="min-width:130px;">
+        <label for="cal-date-input">Dia</label>
+        <input type="date" id="cal-date-input">
+      </div>
+      <div class="field" style="min-width:110px;">
+        <label for="cal-input">Calorias (kcal)</label>
+        <input type="number" id="cal-input" inputmode="numeric" step="1" placeholder="ex: 1800">
+      </div>
+      <button class="primary" id="save-cal-btn">Salvar</button>
+    </div>
+
+    <div class="setup-box" style="margin-top:14px; padding:16px 18px; text-align:left;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <label for="cal-goal-input" style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase;">Meta diária (kcal)</label>
+        <input type="number" id="cal-goal-input" inputmode="numeric" step="10" placeholder="opcional" style="width:110px; background:var(--surface-2); border:1px solid var(--line); color:var(--text); font-family:'Space Mono',monospace; padding:8px 10px; border-radius:8px;">
+        <button class="primary" id="save-goal-btn" style="padding:8px 14px;">Salvar meta</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="cal-stats-row" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-label">Média (7 dias)</div>
+        <div class="stat-value neutral" id="stat-cal-avg">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Dias registrados</div>
+        <div class="stat-value neutral" id="stat-cal-count">—</div>
+      </div>
+    </div>
+
+    <div class="history">
+      <div class="history-title">Histórico diário</div>
+      <div id="cal-history-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: TIMER ===== -->
+  <section id="view-timer" class="view">
+    <div class="timer-card" id="timer-card">
+      <div class="timer-status" id="timer-status">Pronto</div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-controls">
+        <button class="primary" id="timer-start-btn">Iniciar</button>
+        <button class="secondary" id="timer-pause-btn" style="display:none;">Pausar</button>
+        <button class="secondary" id="timer-resume-btn" style="display:none;">Retomar</button>
+        <button class="secondary" id="timer-reset-btn">Zerar</button>
+        <button class="secondary danger" id="timer-stop-alarm-btn" style="display:none;">Parar alarme</button>
+      </div>
+    </div>
+
+    <div class="timer-setup">
+      <div class="field">
+        <label for="timer-minutes-input">Duração da ronda (minutos)</label>
+        <input type="number" id="timer-minutes-input" inputmode="decimal" step="1" placeholder="ex: 30" value="30">
+      </div>
+      <div class="quick-mins">
+        <button data-min="10">10 min</button>
+        <button data-min="15">15 min</button>
+        <button data-min="20">20 min</button>
+        <button data-min="30">30 min</button>
+        <button data-min="45">45 min</button>
+        <button data-min="60">60 min</button>
+      </div>
+
+      <div class="file-row">
+        <div>
+          <label class="filelabel" for="timer-audio-file">Jingle personalizado (opcional)</label><br>
+          <span class="file-name" id="file-name-label">usando alarme padrão</span>
+        </div>
+        <div>
+          <input type="file" id="timer-audio-file" accept="audio/*" style="display:none;">
+          <button class="secondary" id="choose-file-btn" style="padding:9px 14px; font-size:11px;">Escolher áudio</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const els = {
+  setupBox: document.getElementById('setup-box'),
+  counterBox: document.getElementById('counter-box'),
+  startDateInput: document.getElementById('start-date-input'),
+  startBtn: document.getElementById('start-btn'),
+  resetBtn: document.getElementById('reset-btn'),
+  dayNumber: document.getElementById('day-number'),
+  daySuffix: document.getElementById('day-suffix'),
+  motivationText: document.getElementById('motivation-text'),
+  startDateNote: document.getElementById('start-date-note'),
+  tallyGrid: document.getElementById('tally-grid'),
+  weightInput: document.getElementById('weight-input'),
+  saveWeightBtn: document.getElementById('save-weight-btn'),
+  statsRow: document.getElementById('stats-row'),
+  statTotalPct: document.getElementById('stat-total-pct'),
+  statLastPct: document.getElementById('stat-last-pct'),
+  historyList: document.getElementById('history-list'),
+  toast: document.getElementById('toast'),
+  calDateInput: document.getElementById('cal-date-input'),
+  calInput: document.getElementById('cal-input'),
+  saveCalBtn: document.getElementById('save-cal-btn'),
+  calGoalInput: document.getElementById('cal-goal-input'),
+  saveGoalBtn: document.getElementById('save-goal-btn'),
+  calStatsRow: document.getElementById('cal-stats-row'),
+  statCalAvg: document.getElementById('stat-cal-avg'),
+  statCalCount: document.getElementById('stat-cal-count'),
+  calHistoryList: document.getElementById('cal-history-list'),
+  timerCard: document.getElementById('timer-card'),
+  timerStatus: document.getElementById('timer-status'),
+  timerDisplay: document.getElementById('timer-display'),
+  timerStartBtn: document.getElementById('timer-start-btn'),
+  timerPauseBtn: document.getElementById('timer-pause-btn'),
+  timerResumeBtn: document.getElementById('timer-resume-btn'),
+  timerResetBtn: document.getElementById('timer-reset-btn'),
+  timerStopAlarmBtn: document.getElementById('timer-stop-alarm-btn'),
+  timerMinutesInput: document.getElementById('timer-minutes-input'),
+  timerAudioFile: document.getElementById('timer-audio-file'),
+  chooseFileBtn: document.getElementById('choose-file-btn'),
+  fileNameLabel: document.getElementById('file-name-label'),
+};
+
+const START_KEY = 'diet-start-date';
+const WEIGHT_KEY = 'weight-entries';
+const CALORIE_KEY = 'calorie-entries';
+const CALORIE_GOAL_KEY = 'calorie-goal';
+
+function showToast(msg){
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  setTimeout(()=> els.toast.classList.remove('show'), 2200);
+}
+
+function todayISO(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function formatDateBR(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ---------- TABS ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- DAY COUNTER ---------- */
+function daysBetween(startISO, endISO){
+  const start = new Date(startISO + 'T00:00:00');
+  const end = new Date(endISO + 'T00:00:00');
+  const diff = Math.floor((end - start) / (1000*60*60*24));
+  return Math.max(diff, 0);
+}
+
+function motivationFor(days){
+  if(days === 0) return "Hoje é o dia 1. Cada jornada começa com uma decisão — a sua já foi tomada.";
+  if(days < 3) return "Os primeiros dias são os mais difíceis. Você já está indo bem.";
+  if(days < 7) return "Quase uma semana completa. A consistência está se formando.";
+  if(days < 14) return "Uma semana para trás, hábito se firmando. Continue no ritmo.";
+  if(days < 30) return "Você já provou que consegue manter o foco por mais de duas semanas.";
+  if(days < 60) return "Um mês de disciplina. Isso já é estilo de vida, não força de vontade.";
+  if(days < 90) return "Dois meses de consistência. Poucos chegam até aqui — você chegou.";
+  if(days % 100 === 0) return `${days} dias. Um marco. Olhe para trás e reconheça o quanto você percorreu.`;
+  return "Cada dia que passa é prova de que você é mais disciplinado do que ontem.";
+}
+
+function renderTally(days){
+  els.tallyGrid.innerHTML = '';
+  const total = Math.max(days, 0);
+  const toShow = Math.min(total + 1, 140); // cap visual grid, cell = day 0..today
+  for(let i=0; i<toShow; i++){
+    const dot = document.createElement('div');
+    dot.className = 'tally-dot' + (i <= total ? ' filled' : '');
+    els.tallyGrid.appendChild(dot);
+  }
+}
+
+async function loadCounter(){
+  let result;
+  try{
+    result = await window.storage.get(START_KEY, false);
+  }catch(e){
+    result = null;
+  }
+  if(!result || !result.value){
+    els.setupBox.style.display = 'block';
+    els.counterBox.style.display = 'none';
+    els.startDateInput.value = todayISO();
+    return;
+  }
+  const startISO = result.value;
+  const days = daysBetween(startISO, todayISO());
+  els.setupBox.style.display = 'none';
+  els.counterBox.style.display = 'block';
+  els.dayNumber.textContent = days;
+  els.daySuffix.textContent = days === 1 ? 'dia na dieta' : 'dias na dieta';
+  els.motivationText.textContent = motivationFor(days);
+  els.startDateNote.textContent = `início em ${formatDateBR(startISO)}`;
+  renderTally(days);
+}
+
+els.startBtn.addEventListener('click', async ()=>{
+  const val = els.startDateInput.value || todayISO();
+  try{
+    await window.storage.set(START_KEY, val, false);
+    showToast('Contagem iniciada 💪');
+    loadCounter();
+  }catch(e){
+    showToast('Não foi possível salvar. Tente novamente.');
+  }
+});
+
+els.resetBtn.addEventListener('click', async ()=>{
+  if(!confirm('Redefinir a data de início? Isso vai zerar sua contagem de dias.')) return;
+  try{
+    await window.storage.delete(START_KEY, false);
+    showToast('Data de início removida');
+    loadCounter();
+  }catch(e){
+    showToast('Erro ao redefinir.');
+  }
+});
+
+/* ---------- WEIGHT TRACKING ---------- */
+async function loadWeightEntries(){
+  try{
+    const result = await window.storage.get(WEIGHT_KEY, false);
+    if(!result || !result.value) return [];
+    return JSON.parse(result.value);
+  }catch(e){
+    return [];
+  }
+}
+
+async function saveWeightEntries(entries){
+  await window.storage.set(WEIGHT_KEY, JSON.stringify(entries), false);
+}
+
+function pctChange(from, to){
+  if(from === 0) return 0;
+  return ((to - from) / from) * 100;
+}
+
+function formatPct(p){
+  const sign = p > 0 ? '+' : '';
+  return `${sign}${p.toFixed(1)}%`;
+}
+
+function classFor(p){
+  if(Math.abs(p) < 0.05) return 'neutral';
+  return p > 0 ? 'pos' : 'neg'; // pos (ganho) = vermelho, neg (perda) = verde
+}
+
+async function renderWeight(){
+  const entries = await loadWeightEntries();
+  entries.sort((a,b)=> a.date.localeCompare(b.date));
+
+  if(entries.length === 0){
+    els.statsRow.style.display = 'none';
+    els.historyList.innerHTML = '<div class="empty-state">Nenhum registro ainda.<br>Adicione seu peso atual acima para começar o acompanhamento.</div>';
+    return;
+  }
+
+  const first = entries[0].weight;
+  const last = entries[entries.length - 1].weight;
+  const prev = entries.length > 1 ? entries[entries.length - 2].weight : first;
+
+  const totalPct = pctChange(first, last);
+  const lastPct = pctChange(prev, last);
+
+  els.statsRow.style.display = 'grid';
+  els.statTotalPct.textContent = formatPct(totalPct);
+  els.statTotalPct.className = 'stat-value ' + classFor(totalPct);
+  els.statLastPct.textContent = entries.length > 1 ? formatPct(lastPct) : '—';
+  els.statLastPct.className = 'stat-value ' + (entries.length > 1 ? classFor(lastPct) : 'neutral');
+
+  // render newest first
+  const reversed = [...entries].reverse();
+  els.historyList.innerHTML = '';
+  reversed.forEach((entry, idx)=>{
+    const originalIdx = entries.length - 1 - idx;
+    const prevEntry = entries[originalIdx - 1];
+    const deltaVsFirst = pctChange(first, entry.weight);
+    const row = document.createElement('div');
+    row.className = 'entry';
+
+    const deltaLabel = originalIdx === 0
+      ? 'início'
+      : formatPct(deltaVsFirst) + ' desde o início';
+
+    row.innerHTML = `
+      <div class="entry-left">
+        <div class="entry-date">${formatDateBR(entry.date)}</div>
+        <div class="entry-weight">${entry.weight.toFixed(1)} kg</div>
+      </div>
+      <div class="entry-right">
+        <div class="entry-delta ${originalIdx === 0 ? 'neutral' : classFor(deltaVsFirst)}">${deltaLabel}</div>
+        <button class="del-btn" data-index="${originalIdx}" title="Remover registro">✕</button>
+      </div>
+    `;
+    els.historyList.appendChild(row);
+  });
+
+  document.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.index, 10);
+      const currentEntries = await loadWeightEntries();
+      currentEntries.sort((a,b)=> a.date.localeCompare(b.date));
+      currentEntries.splice(idx, 1);
+      await saveWeightEntries(currentEntries);
+      showToast('Registro removido');
+      renderWeight();
+    });
+  });
+}
+
+els.saveWeightBtn.addEventListener('click', async ()=>{
+  const val = parseFloat(els.weightInput.value);
+  if(isNaN(val) || val <= 0){
+    showToast('Digite um peso válido');
+    return;
+  }
+  try{
+    const entries = await loadWeightEntries();
+    const today = todayISO();
+    const existingIdx = entries.findIndex(e => e.date === today);
+    if(existingIdx >= 0){
+      entries[existingIdx].weight = val;
+    } else {
+      entries.push({ date: today, weight: val });
+    }
+    await saveWeightEntries(entries);
+    els.weightInput.value = '';
+    showToast('Peso registrado ✓');
+    renderWeight();
+  }catch(e){
+    showToast('Erro ao salvar peso');
+  }
+});
+
+/* ---------- CALORIE TRACKING ---------- */
+async function loadCalorieEntries(){
+  try{
+    const result = await window.storage.get(CALORIE_KEY, false);
+    if(!result || !result.value) return {};
+    return JSON.parse(result.value);
+  }catch(e){
+    return {};
+  }
+}
+
+async function saveCalorieEntries(map){
+  await window.storage.set(CALORIE_KEY, JSON.stringify(map), false);
+}
+
+async function loadCalorieGoal(){
+  try{
+    const result = await window.storage.get(CALORIE_GOAL_KEY, false);
+    if(!result || !result.value) return null;
+    return parseFloat(result.value);
+  }catch(e){
+    return null;
+  }
+}
+
+function classForCalories(value, goal){
+  if(!goal) return 'neutral';
+  const diff = value - goal;
+  const tolerance = goal * 0.05; // 5% de tolerância
+  if(Math.abs(diff) <= tolerance) return 'neg'; // dentro da meta = verde
+  return diff > 0 ? 'pos' : 'neutral'; // acima da meta = vermelho, abaixo = neutro
+}
+
+async function renderCalories(){
+  const map = await loadCalorieEntries();
+  const goal = await loadCalorieGoal();
+  els.calGoalInput.value = goal || '';
+
+  const dates = Object.keys(map).sort((a,b)=> b.localeCompare(a)); // mais recente primeiro
+
+  if(dates.length === 0){
+    els.calStatsRow.style.display = 'none';
+    els.calHistoryList.innerHTML = '<div class="empty-state">Nenhum dia registrado ainda.<br>Escolha a data e registre as calorias consumidas.</div>';
+    return;
+  }
+
+  const last7 = dates.slice(0, 7);
+  const avg = last7.reduce((sum, d) => sum + map[d], 0) / last7.length;
+
+  els.calStatsRow.style.display = 'grid';
+  els.statCalAvg.textContent = `${Math.round(avg)} kcal`;
+  els.statCalCount.textContent = dates.length;
+
+  els.calHistoryList.innerHTML = '';
+  dates.forEach(date=>{
+    const value = map[date];
+    const cls = classForCalories(value, goal);
+    const diffLabel = goal
+      ? (value > goal ? `+${Math.round(value - goal)} kcal acima da meta` : (value < goal ? `${Math.round(value - goal)} kcal abaixo da meta` : 'na meta'))
+      : '';
+    const row = document.createElement('div');
+    row.className = 'entry';
+    row.innerHTML = `
+      <div class="entry-left">
+        <div class="entry-date">${formatDateBR(date)}</div>
+        <div class="entry-weight">${Math.round(value)} kcal</div>
+      </div>
+      <div class="entry-right">
+        ${diffLabel ? `<div class="entry-delta ${cls}">${diffLabel}</div>` : ''}
+        <button class="del-btn" data-date="${date}" title="Remover registro">✕</button>
+      </div>
+    `;
+    els.calHistoryList.appendChild(row);
+  });
+
+  document.querySelectorAll('#cal-history-list .del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const date = btn.dataset.date;
+      const currentMap = await loadCalorieEntries();
+      delete currentMap[date];
+      await saveCalorieEntries(currentMap);
+      showToast('Registro removido');
+      renderCalories();
+    });
+  });
+}
+
+els.saveCalBtn.addEventListener('click', async ()=>{
+  const date = els.calDateInput.value || todayISO();
+  const val = parseFloat(els.calInput.value);
+  if(isNaN(val) || val <= 0){
+    showToast('Digite um valor de calorias válido');
+    return;
+  }
+  try{
+    const map = await loadCalorieEntries();
+    map[date] = val;
+    await saveCalorieEntries(map);
+    els.calInput.value = '';
+    showToast(`Calorias de ${formatDateBR(date)} salvas ✓`);
+    renderCalories();
+  }catch(e){
+    showToast('Erro ao salvar calorias');
+  }
+});
+
+els.saveGoalBtn.addEventListener('click', async ()=>{
+  const val = parseFloat(els.calGoalInput.value);
+  try{
+    if(isNaN(val) || val <= 0){
+      await window.storage.delete(CALORIE_GOAL_KEY, false);
+      showToast('Meta removida');
+    } else {
+      await window.storage.set(CALORIE_GOAL_KEY, String(val), false);
+      showToast('Meta salva ✓');
+    }
+    renderCalories();
+  }catch(e){
+    showToast('Erro ao salvar meta');
+  }
+});
+
+/* ---------- TIMER ---------- */
+let timerTotalSeconds = 0;
+let timerRemaining = 0;
+let timerInterval = null;
+let timerRunning = false;
+let customAudio = null; // Audio element for user-uploaded file
+let ringInterval = null; // loops the alarm until dismissed
+let audioCtx = null;
+
+function fmtTime(totalSec){
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateTimerDisplay(){
+  els.timerDisplay.textContent = fmtTime(timerRemaining);
+}
+
+function getAudioCtx(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+// Toca uma sequência curta de notas (jingle genérico) usando osciladores
+function playGeneratedJingle(){
+  const ctx = getAudioCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+  const now = ctx.currentTime;
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const start = now + i * 0.18;
+    const end = start + 0.35;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(end + 0.02);
+  });
+}
+
+function playAlarm(){
+  if(customAudio){
+    customAudio.currentTime = 0;
+    customAudio.play().catch(()=>{});
+  } else {
+    playGeneratedJingle();
+  }
+}
+
+function startRinging(){
+  els.timerCard.classList.add('ringing');
+  els.timerDisplay.classList.add('ringing');
+  els.timerStatus.textContent = 'Ronda concluída';
+  els.timerStopAlarmBtn.style.display = 'inline-block';
+  els.timerStartBtn.style.display = 'none';
+  els.timerPauseBtn.style.display = 'none';
+  els.timerResumeBtn.style.display = 'none';
+  playAlarm();
+  // repete o jingle a cada ~2.5s (ou o áudio customizado se não tiver loop nativo) até parar
+  ringInterval = setInterval(()=>{
+    playAlarm();
+  }, customAudio ? Math.max((customAudio.duration || 3) * 1000, 1500) : 2500);
+  if(navigator.vibrate) navigator.vibrate([300,150,300,150,300]);
+}
+
+function stopRinging(){
+  clearInterval(ringInterval);
+  ringInterval = null;
+  els.timerCard.classList.remove('ringing');
+  els.timerDisplay.classList.remove('ringing');
+  els.timerStatus.textContent = 'Pronto';
+  els.timerStopAlarmBtn.style.display = 'none';
+  els.timerStartBtn.style.display = 'inline-block';
+  resetTimerState();
+}
+
+function resetTimerState(){
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  const mins = parseFloat(els.timerMinutesInput.value) || 0;
+  timerTotalSeconds = Math.round(mins * 60);
+  timerRemaining = timerTotalSeconds;
+  updateTimerDisplay();
+  els.timerStartBtn.style.display = 'inline-block';
+  els.timerPauseBtn.style.display = 'none';
+  els.timerResumeBtn.style.display = 'none';
+  els.timerStatus.textContent = 'Pronto';
+}
+
+function tick(){
+  timerRemaining--;
+  updateTimerDisplay();
+  if(timerRemaining <= 0){
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerRunning = false;
+    startRinging();
+  }
+}
+
+els.timerStartBtn.addEventListener('click', ()=>{
+  const mins = parseFloat(els.timerMinutesInput.value);
+  if(isNaN(mins) || mins <= 0){
+    showToast('Digite um tempo válido em minutos');
+    return;
+  }
+  // desbloqueia o áudio no primeiro gesto do usuário (necessário em navegadores mobile)
+  getAudioCtx();
+  timerTotalSeconds = Math.round(mins * 60);
+  timerRemaining = timerTotalSeconds;
+  updateTimerDisplay();
+  timerRunning = true;
+  els.timerStatus.textContent = 'Rodando';
+  els.timerStartBtn.style.display = 'none';
+  els.timerPauseBtn.style.display = 'inline-block';
+  timerInterval = setInterval(tick, 1000);
+});
+
+els.timerPauseBtn.addEventListener('click', ()=>{
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  els.timerStatus.textContent = 'Pausado';
+  els.timerPauseBtn.style.display = 'none';
+  els.timerResumeBtn.style.display = 'inline-block';
+});
+
+els.timerResumeBtn.addEventListener('click', ()=>{
+  timerRunning = true;
+  els.timerStatus.textContent = 'Rodando';
+  els.timerResumeBtn.style.display = 'none';
+  els.timerPauseBtn.style.display = 'inline-block';
+  timerInterval = setInterval(tick, 1000);
+});
+
+els.timerResetBtn.addEventListener('click', ()=>{
+  stopRingingSilent();
+  resetTimerState();
+});
+
+function stopRingingSilent(){
+  clearInterval(ringInterval);
+  ringInterval = null;
+  els.timerCard.classList.remove('ringing');
+  els.timerDisplay.classList.remove('ringing');
+  els.timerStopAlarmBtn.style.display = 'none';
+}
+
+els.timerStopAlarmBtn.addEventListener('click', ()=>{
+  stopRinging();
+});
+
+els.chooseFileBtn.addEventListener('click', ()=>{
+  els.timerAudioFile.click();
+});
+
+els.timerAudioFile.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  customAudio = new Audio(url);
+  els.fileNameLabel.textContent = file.name;
+  showToast('Áudio carregado para esta sessão');
+});
+
+document.querySelectorAll('.quick-mins button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    els.timerMinutesInput.value = btn.dataset.min;
+    if(!timerRunning) resetTimerState();
+  });
+});
+
+/* ---------- INIT ---------- */
+els.calDateInput.value = todayISO();
+resetTimerState();
+loadCounter();
+renderWeight();
+renderCalories();
+</script>
+</body>
+</html>
